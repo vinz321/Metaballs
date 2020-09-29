@@ -1,0 +1,83 @@
+﻿
+#pragma kernel MarchCubes
+#include "/MarchTables.compute"
+
+struct Triangle{
+    float3 v1;
+    float3 v2;
+    float3 v3;
+};
+
+int numPointsPerAxis;
+float isolevel;
+
+AppendStructuredBuffer<Triangle> tris;
+RWStructuredBuffer<float4> points;
+
+int getIndex(int x,int y,int z)
+{
+    return x + y*numPointsPerAxis + z*numPointsPerAxis*numPointsPerAxis;
+}
+
+float3 interpolate(float4 v1, float4 v2)
+{
+    float t=(isolevel - v1.w)/(v2.w-v1.w); 
+    return v1.xyz + t*(v2.xyz-v1.xyz);
+}
+float3 interpolate(float3 v1, float3 v2, float t)
+{ 
+    return v1 + t*(v2-v1);
+}
+float getInterpolationValue(float v1,float v2)
+{
+    return (isolevel - v1)/(v2-v1);
+}
+
+[numthreads(8,8,8)]
+void MarchCubes (int3 id : SV_DispatchThreadID)
+{
+    if(id.x >= numPointsPerAxis-1 || id.y >= numPointsPerAxis-1 || id.z >= numPointsPerAxis-1){
+        return;}
+    
+    float4 cubePoints[8]={
+        points[getIndex(id.x,id.y,id.z)],
+        points[getIndex(id.x+1,id.y,id.z)],
+        points[getIndex(id.x+1,id.y,id.z+1)],
+        points[getIndex(id.x,id.y,id.z+1)],
+        points[getIndex(id.x,id.y+1,id.z)],
+        points[getIndex(id.x+1,id.y+1,id.z)],
+        points[getIndex(id.x+1,id.y+1,id.z+1)],
+        points[getIndex(id.x,id.y+1,id.z+1)]};
+    
+    int cubeIndex=0;
+    if(cubePoints[0].w>isolevel) cubeIndex|=1;
+    if(cubePoints[1].w>isolevel) cubeIndex|=2;
+    if(cubePoints[2].w>isolevel) cubeIndex|=4;
+    if(cubePoints[3].w>isolevel) cubeIndex|=8;
+    if(cubePoints[4].w>isolevel) cubeIndex|=16;
+    if(cubePoints[5].w>isolevel) cubeIndex|=32;
+    if(cubePoints[6].w>isolevel) cubeIndex|=64;
+    if(cubePoints[7].w>isolevel) cubeIndex|=128;
+
+    for(int i=0;triTable[cubeIndex][i]!=-1;i+=3)
+    {
+        int a0=edgeAPoint[triTable[cubeIndex][i]];
+        int b0=edgeBPoint[triTable[cubeIndex][i]];
+
+        int a1=edgeAPoint[triTable[cubeIndex][i+1]];
+        int b1=edgeBPoint[triTable[cubeIndex][i+1]];
+        
+        int a2=edgeAPoint[triTable[cubeIndex][i+2]];
+        int b2=edgeBPoint[triTable[cubeIndex][i+2]];
+
+        float t1=getInterpolationValue(cubePoints[a0].w,cubePoints[b0].w);
+        float t2=getInterpolationValue(cubePoints[a1].w,cubePoints[b1].w);
+        float t3=getInterpolationValue(cubePoints[a2].w,cubePoints[b2].w);
+
+        Triangle tri;
+        tri.v1=interpolate(cubePoints[a0].xyz,cubePoints[b0].xyz,t1);
+        tri.v2=interpolate(cubePoints[a1].xyz,cubePoints[b1].xyz,t2);
+        tri.v3=interpolate(cubePoints[a2].xyz,cubePoints[b2].xyz,t3);
+        tris.Append(tri);
+    }
+}

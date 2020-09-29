@@ -1,0 +1,52 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel MetaballsBufferComputing
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+int bufLength;
+int numPointsPerAxis;
+float3 pos;
+/*struct pointAndNorm{
+    float4 p;
+    float3 n;
+}*/
+
+StructuredBuffer<float4> metaballs;
+RWStructuredBuffer<float4> points;
+
+float getPointValue(float4 metaball,float3 pointPosition)
+{
+    float i=1-(distance(metaball.xyz,pointPosition)/(metaball.w));
+    return (i>0)?i:0;
+}
+int getIndex(int x,int y,int z)
+{
+    return x + y*numPointsPerAxis + z*numPointsPerAxis*numPointsPerAxis;
+}
+
+
+[numthreads(8,8,8)]
+void MetaballsBufferComputing (int3 id : SV_DispatchThreadID)
+{
+    if(id.x>=numPointsPerAxis || id.y>=numPointsPerAxis || id.z>=numPointsPerAxis)
+         return;
+    int index=getIndex(id.x,id.y,id.z);    
+    points[index].xyz=id+pos;
+    /*float tradius=0;
+    float3 normal;*/
+    for(int i=0;i<bufLength;i++)
+    {
+        
+        if(i==0)
+            points[index].w=0;
+        
+        float v=getPointValue(metaballs[i],float3(id))+points[index].w;
+        points[index].w=(v>1)?1:v;
+        //tradius+=metaballs[i].w;
+    }
+    /*for(int i=0;i<bufLength;i++)
+    {
+        normal+=normalize(points[index]-metaballs[i].xyz)*metaballs[i]/tradius;
+    }
+    */
+}
