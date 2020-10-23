@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-
 public class MarchCubesGPU : MonoBehaviour
 {
     public ComputeShader shader;
@@ -14,6 +13,10 @@ public class MarchCubesGPU : MonoBehaviour
     ComputeBuffer trisCount;
     int numPointsPerAxis=30;
     public bool start=false;
+    int[] triCountArray={0};
+    Triangle[] triArray=new Triangle[65536];
+    Vector3[] vertices=new Vector3[65536];
+    int[] indices=new int[65536];
     struct Triangle{
         public Vector3 v1;
         public Vector3 v2;
@@ -78,16 +81,14 @@ public class MarchCubesGPU : MonoBehaviour
 
         
         ComputeBuffer.CopyCount(tris,trisCount,0);
-        int[] triCountArray={0};
         trisCount.GetData(triCountArray);
         int triNum=triCountArray[0];
-        print(triNum);
-        Triangle[] triArray=new Triangle[triNum];
+        triArray=new Triangle[triNum];
         tris.GetData(triArray,0,0,triNum);
 
 
-        Vector3[] vertices=new Vector3[triNum*3];
-        int[] indices=new int[triNum*3];
+        vertices=new Vector3[triNum*3];
+        indices=new int[triNum*3];
 
         for(int i=0;i<triNum;i++)
         {
@@ -103,5 +104,6 @@ public class MarchCubesGPU : MonoBehaviour
         mesh.triangles=indices;
         mesh.RecalculateNormals();
         meshFilter.mesh=mesh;
+        
     }
 }

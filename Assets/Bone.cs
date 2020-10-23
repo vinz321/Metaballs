@@ -5,6 +5,7 @@ using UnityEngine;
 public class Bone : MonoBehaviour
 {
     // Start is called before the first frame update
+    public float length;
     void Start()
     {
         
@@ -14,5 +15,24 @@ public class Bone : MonoBehaviour
     void Update()
     {
         
+    }
+
+    public Vector3 head{
+        get{
+            return transform.position;
+        }
+        set{
+            transform.position=value;
+        }
+
+    }
+    public Vector3 tail{
+        get{
+            return transform.position+transform.forward*length;
+        }
+        set{
+            transform.position=value-transform.forward*length;
+        }
+
     }
 }

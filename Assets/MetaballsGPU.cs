@@ -15,13 +15,16 @@ public class MetaballsGPU : MonoBehaviour
     public Transform metaball;
     public float metaballRadius;
     public List<Vector4> metaballs=new List<Vector4>();
+    public List<Metaball> meta=new List<Metaball>();
     List<Vector4> actualMetaballs=new List<Vector4>();
     void Start()
     {
         pointBuffer=new ComputeBuffer(30*30*30,sizeof(float)*4);
         metaballBuffer=new ComputeBuffer(64,sizeof(float)*4);
-        actualMetaballs.AddRange(metaballs);
-        
+        for(int i=0;i<meta.Count;i++)
+        {
+            actualMetaballs.Add(meta[i].metaball);
+        }
     }
 
     // Update is called once per frame
@@ -51,13 +54,11 @@ public class MetaballsGPU : MonoBehaviour
     }
     void populateMetaballBuffer()
     {
-        for(int i=0;i<metaballs.Count;i++)
+        for(int i=0;i<meta.Count;i++)
         {
-            actualMetaballs[i]=metaballs[i]-(Vector4)transform.position;
+            actualMetaballs[i]=meta[i].metaball-(Vector4)transform.position;
         }
-        actualMetaballs.Add(new Vector4(metaball.position.x,metaball.position.y,metaball.position.z,metaballRadius)-(Vector4)transform.position);
         metaballBuffer.SetData<Vector4>(actualMetaballs);
-        actualMetaballs.RemoveAt(actualMetaballs.Count-1);
     }
     void ReleaseBuffers()
     {
