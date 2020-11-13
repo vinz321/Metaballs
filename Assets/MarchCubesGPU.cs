@@ -17,6 +17,7 @@ public class MarchCubesGPU : MonoBehaviour
     Triangle[] triArray=new Triangle[65536];
     Vector3[] vertices=new Vector3[65536];
     int[] indices=new int[65536];
+    float normalBlendDist=0.5f;
     struct Triangle{
         public Vector3 v1;
         public Vector3 v2;
@@ -52,6 +53,8 @@ public class MarchCubesGPU : MonoBehaviour
     {
         if(meta.pointBuffer!=null && start){
             computeShaderWork();}
+        normalBlendDist+=Input.GetAxis("Vertical")*Time.deltaTime;
+        
     }
     void CreateBuffers(){
         tris=new ComputeBuffer(5*29*29*29,sizeof(float)*9,ComputeBufferType.Append);
@@ -65,6 +68,12 @@ public class MarchCubesGPU : MonoBehaviour
             tris.Release();
             trisCount.Release();
         }
+    }
+
+    void recalcNorm(Mesh mesh){
+        Vector3[] norm=mesh.normals;
+        MeshUtils.normalsRecalc(mesh.vertices,norm,normalBlendDist);
+        mesh.normals=norm;
     }
     void computeShaderWork()
     {
@@ -103,6 +112,7 @@ public class MarchCubesGPU : MonoBehaviour
         mesh.vertices=vertices;
         mesh.triangles=indices;
         mesh.RecalculateNormals();
+        recalcNorm(mesh);
         meshFilter.mesh=mesh;
         
     }
